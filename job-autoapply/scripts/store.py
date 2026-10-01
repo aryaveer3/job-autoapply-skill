@@ -39,7 +39,8 @@ def validate(prof):
     tmpl = json.loads(TEMPLATE.read_text()); errs = []
     def walk(t, d, path):
         for k, v in t.items():
-            if k not in d: errs.append(f"missing {path}{k}")
+            if k not in d:
+                if not (path == "" and k == "notify"): errs.append(f"missing {path}{k}")
             elif isinstance(v, dict) and isinstance(d[k], dict) and k not in ("skill_years", "supervised_runs"):
                 walk(v, d[k], f"{path}{k}.")
     walk(tmpl, prof, "")

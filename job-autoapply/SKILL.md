@@ -18,6 +18,23 @@ These protect the candidate's accounts and reputation. They apply in every mode,
 5. **LinkedIn ToS.** LinkedIn prohibits automation. Its default is `approve_each`; the user may choose otherwise only after `linkedin.tos_risk_acknowledged` is set true. Respect that choice.
 6. **Supervised start.** On any platform, run in `approve_each` until `supervised_runs.<platform>` ≥ 2. After that, use the configured mode.
 
+## Getting the user's attention
+
+Whenever the run needs the user, call `python3 scripts/notify.py --event <e> --msg "<platform: what's needed>"` **before** waiting, so they hear it even if they're in another window:
+
+| Situation | event |
+|---|---|
+| OTP prompt | `otp` |
+| CAPTCHA / "verify you're human" | `captcha` |
+| Login wall / session expired | `login` |
+| Daily-limit message, "unusual activity", restriction notice | `limit` |
+| Unexpected failure that stops a platform | `error` |
+| Waiting for Submit approval (approve_each) or shortlist OK (approve_batch) | `approval` |
+| Pending screening questions at end of run | `question` |
+| Run finished (always, with "applied N, skipped M") | `done` |
+
+Blocked events (otp, captcha, login, limit, error) play an urgent sound twice and ignore quiet hours; others play once. If the user wants alerts on their phone (useful for scheduled runs), they install the free ntfy app, subscribe to a hard-to-guess topic name, and you save it with `store.py set --key notify.ntfy_topic --value '"<topic>"'`. Tell them the topic name works like a password: anyone who knows it can read the alerts, so messages should never include personal details. Other settings: `notify.sound`, `notify.speak` (spoken alert), `notify.quiet_hours` (e.g. `[23, 7]`).
+
 ## Local data (`~/job-autoapply/`, via `scripts/store.py` only)
 
 ```

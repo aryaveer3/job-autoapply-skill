@@ -7,6 +7,7 @@ A [Claude skill](https://docs.claude.com) that finds matching jobs and applies f
 - **Code-side prefilter** (`prefilter.py`): dedupes (including the same role across platforms), applies exclusions, scores 0–100 — only a shortlist reaches the model.
 - **Deterministic answer bank** (`store.py match`): resolves screening questions without LLM reasoning; skill-years only from verified profile data.
 - **Autopilot**: "run my job hunt" runs all platforms cheapest-first, with per-platform caps and modes, and a final report.
+- **Attention alerts** (`notify.py`): sound + macOS notification when it needs you (OTP, CAPTCHA, login, approval, limits, run finished); optional phone push via ntfy.
 - **Learned recipes**: site quirks are saved to `recipes.md` so later runs don't rediscover them.
 - **Resume-first setup**: reads your resume, then asks only the clarifying questions it can't answer (CTC, notice period, per-skill years, exclusions, caps).
 - **Local storage** in `~/job-autoapply/`: profile, a growing screening-answer bank, an application log for de-duplication, and pending questions.
@@ -47,6 +48,7 @@ job-autoapply/
   scripts/store.py             # profile, answer matching, log, targets, recipes
   scripts/ats_fetch.py         # public ATS job feeds -> jobs.jsonl
   scripts/prefilter.py         # dedupe + score -> shortlist.json
+  scripts/notify.py            # sound / banner / phone alerts
 job-autoapply.skill            # packaged, ready to install
 ```
 

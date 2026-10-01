@@ -91,5 +91,11 @@
       "linkedin": 0
     }
   },
-  "cover_note": ""
+  "cover_note": "",
+  "notify": {
+    "sound": true,
+    "speak": false,
+    "ntfy_topic": "",
+    "quiet_hours": null
+  }
 }
