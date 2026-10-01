@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "candidate": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "current_title": "",
+    "current_company": "",
+    "resume_file": "resumes/resume.pdf"
+  },
+  "facts": {
+    "total_experience_years": 0,
+    "skill_years": {},
+    "current_ctc_lpa": null,
+    "expected_ctc_lpa": null,
+    "ctc_negotiable": true,
+    "notice_period_days": null,
+    "current_location": "",
+    "work_authorization": "",
+    "needs_sponsorship": false,
+    "education": ""
+  },
+  "prefs": {
+    "target_titles": [],
+    "must_have_keywords": [],
+    "nice_to_have_keywords": [],
+    "experience_range": [0, 0],
+    "locations": [],
+    "work_modes": ["onsite", "hybrid", "remote"],
+    "willing_to_relocate": false
+  },
+  "exclusions": {
+    "companies": [],
+    "role_keywords": [],
+    "skip_staffing_agencies": false
+  },
+  "automation": {
+    "platforms": ["naukri"],
+    "min_match_score": 65,
+    "naukri": {"mode": "approve_each", "daily_cap": 15},
+    "linkedin": {"mode": "approve_each", "daily_cap": 10, "tos_risk_acknowledged": false},
+    "supervised_runs_completed": 0
+  },
+  "cover_note": ""
+}

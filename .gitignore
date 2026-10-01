@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.tmp
+profile.json
+answers.json
+applied.jsonl
+pending_questions.json
+resumes/
