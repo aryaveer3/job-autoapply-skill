@@ -24,9 +24,10 @@ Ask only what the resume doesn't already answer. Confirm inferred values ("Your 
 - Minimum match score (default 65)
 
 ## Group D — Automation settings
-- Platforms: Naukri, LinkedIn, or both
+- Platforms: any of ats (company career sites), indeed, naukri, instahyre, hirist, cutshort, wellfound, linkedin
+- Target companies for career-board watching (names or careers URLs; resolve to Greenhouse/Lever/Ashby slugs and save with `store.py target`)
 - Approval mode per platform: approve_each / approve_batch / auto (explain LinkedIn ToS risk; recommend approve_each on LinkedIn)
-- Daily cap per platform (defaults: Naukri 15, LinkedIn 10; hard maximums enforced by script: Naukri 40, LinkedIn 25)
+- Daily cap per platform (defaults / script hard max): ats 15/40, indeed 15/30, naukri 15/40, instahyre 20/30, hirist 15/30, cutshort 10/20, wellfound 8/15, linkedin 10/25
 - Which resume file to upload when a form asks (if multiple)
 - Optional: a 2–3 line cover note to reuse when a form has a free-text "why you" box (draft one from the resume; user approves)
 

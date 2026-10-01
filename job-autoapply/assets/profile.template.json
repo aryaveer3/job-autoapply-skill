@@ -24,9 +24,16 @@
     "target_titles": [],
     "must_have_keywords": [],
     "nice_to_have_keywords": [],
-    "experience_range": [0, 0],
+    "experience_range": [
+      0,
+      0
+    ],
     "locations": [],
-    "work_modes": ["onsite", "hybrid", "remote"],
+    "work_modes": [
+      "onsite",
+      "hybrid",
+      "remote"
+    ],
     "willing_to_relocate": false
   },
   "exclusions": {
@@ -35,11 +42,54 @@
     "skip_staffing_agencies": false
   },
   "automation": {
-    "platforms": ["naukri"],
+    "platforms": [
+      "ats",
+      "naukri"
+    ],
     "min_match_score": 65,
-    "naukri": {"mode": "approve_each", "daily_cap": 15},
-    "linkedin": {"mode": "approve_each", "daily_cap": 10, "tos_risk_acknowledged": false},
-    "supervised_runs_completed": 0
+    "ats": {
+      "mode": "approve_each",
+      "daily_cap": 15
+    },
+    "indeed": {
+      "mode": "approve_each",
+      "daily_cap": 15
+    },
+    "naukri": {
+      "mode": "approve_each",
+      "daily_cap": 15
+    },
+    "instahyre": {
+      "mode": "approve_each",
+      "daily_cap": 20
+    },
+    "hirist": {
+      "mode": "approve_each",
+      "daily_cap": 15
+    },
+    "cutshort": {
+      "mode": "approve_each",
+      "daily_cap": 10
+    },
+    "wellfound": {
+      "mode": "approve_each",
+      "daily_cap": 8
+    },
+    "linkedin": {
+      "mode": "approve_each",
+      "daily_cap": 10,
+      "tos_risk_acknowledged": false
+    },
+    "supervised_runs": {
+      "ats": 0,
+      "indeed": 0,
+      "naukri": 0,
+      "instahyre": 0,
+      "hirist": 0,
+      "cutshort": 0,
+      "wellfound": 0,
+      "linkedin": 0
+    }
   },
   "cover_note": ""
 }

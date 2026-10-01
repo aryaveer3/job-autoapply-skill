@@ -1,7 +1,7 @@
 # LinkedIn Easy Apply flow
 
 ## Risk, stated plainly
-LinkedIn's User Agreement prohibits bots and automated methods. Their detection looks at volume, speed, repetitive patterns and automation frameworks, and account restrictions range from a short cooldown to permanent loss of the account. There is no "safe undetectable" method, and this skill does not try to be one. What lowers risk: the user's own normal browser, low daily volume, genuinely relevant applications, and the user clicking Submit. Say this once at setup; respect the user's choice; record it in `profile.json`.
+LinkedIn's User Agreement prohibits bots and automated methods. Their detection looks at volume, speed, repetitive patterns and automation frameworks, and account restrictions range from a short cooldown to permanent loss of the account. There is no "safe undetectable" method, and this skill does not try to be one. What lowers risk: the user's own normal browser, low daily volume, genuinely relevant applications, and the user clicking Submit. Say this once at setup; respect the user's choice; record it in `profile.json` as `automation.linkedin.tos_risk_acknowledged`. Modes other than `approve_each` require that flag to be true (the script enforces it).
 
 ## Limits
 - Default cap 10/day, script hard max 25. LinkedIn also shows its own daily Easy Apply limit message — stop when it appears.

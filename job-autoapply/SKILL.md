@@ -1,91 +1,88 @@
 ---
 name: job-autoapply
-description: Applies to jobs on Naukri.com and LinkedIn (Easy Apply) on the user's behalf through Claude in Chrome, using a locally saved candidate profile built from their resume. Use this skill whenever the user wants to auto-apply, bulk-apply, batch-apply or "apply to jobs for me" on Naukri or LinkedIn, set up or update their job-application profile, answer screening questions from their resume, run a daily job-application session, check which jobs were already applied to, or schedule recurring applications — even if they just say "apply to some jobs today" or "run my job hunt".
+description: AI job-application copilot that finds matching jobs and applies on the user's behalf across Naukri, LinkedIn Easy Apply, Instahyre, Wellfound, Cutshort, Hirist, Indeed and company career sites (Greenhouse, Lever, Ashby), using a locally saved profile built from their resume. Use this skill whenever the user wants to auto-apply, bulk-apply, "apply to jobs for me", run or schedule their job hunt, set up or update their job profile, answer screening questions from their resume, add target companies, or check application history — even if they just say "run my job hunt" or "apply to a few jobs today".
 ---
 
-# Job Auto-Apply (Naukri + LinkedIn)
+# Job Auto-Apply Copilot (v2)
 
-Find matching jobs, fill application forms truthfully from the candidate's real resume, and log every application locally so nothing is applied to twice. The browser work happens in the user's own Chrome via Claude in Chrome, logged in as themselves.
+End-to-end job-hunt autopilot: discover jobs cheaply (APIs first, browser last), score them against the candidate's real profile, apply truthfully, verify each submission, and log everything locally so nothing is applied to twice.
 
-## Ground rules (read first)
+## Ground rules
 
-These exist to protect the candidate's accounts and reputation, not to slow things down.
+These protect the candidate's accounts and reputation. They apply in every mode, including full autopilot.
 
-1. **Never fabricate.** Every answer (years of experience, skills, CTC, notice period) must trace back to the resume or to something the user told you during setup. An inflated "5 years of Kafka" that gets caught in an interview costs more than one skipped job. If you can't answer a question truthfully from the profile, skip the job and log the question for the user.
-2. **Human volume, real browser.** Work only in the user's normal Chrome session. No headless browsers, proxies, second accounts, CAPTCHA solvers or fingerprint tricks. Respect the daily caps in `profile.json` (defaults below). Platform detection targets volume and repetitive patterns; the reliable way to stay safe is low volume and genuinely relevant applications.
-3. **Stop on any platform pushback.** CAPTCHA, OTP prompt, "unusual activity", "you've reached today's limit", login wall, or a restriction notice → stop the run immediately, log it, and tell the user. Do not try to get around it.
-4. **LinkedIn needs extra care.** LinkedIn's User Agreement prohibits automated tools, and restrictions in 2026 are most often triggered by automation. Default LinkedIn to `approve_each` mode (Claude fills, user clicks Submit) and a low cap. Tell the user this once during setup; let them choose, and record their choice.
-5. **Approval mode is the user's call.** `approve_each` (pause before every Submit), `approve_batch` (show the shortlist, user OKs it, then submit), or `auto` (submit within caps). First runs are always `approve_each` regardless of setting, until the user has watched at least one full run.
+1. **Never fabricate.** Every answer must trace to the resume or to something the user told you. If a question can't be answered truthfully, skip the job and queue the question (`pending_questions.json`). Never round experience up.
+2. **Real browser for logged-in sites.** Naukri, LinkedIn, Instahyre, Wellfound, Cutshort, Hirist and Indeed are driven only through Claude in Chrome in the user's own session. No headless browsers, Playwright, proxies, extra accounts, CAPTCHA solvers or fingerprint tricks on those sites.
+3. **Stop on pushback.** CAPTCHA, OTP, "unusual activity", daily-limit message, login wall, or restriction notice → stop that platform for the day, log it, continue with other platforms, and report it.
+4. **Caps are hard.** `store.py today` gives remaining budget per platform; never exceed it. Script-enforced hard maximums exist per platform.
+5. **LinkedIn ToS.** LinkedIn prohibits automation. Its default is `approve_each`; the user may choose otherwise only after `linkedin.tos_risk_acknowledged` is set true. Respect that choice.
+6. **Supervised start.** On any platform, run in `approve_each` until `supervised_runs.<platform>` ≥ 2. After that, use the configured mode.
 
-## Local data
-
-Everything lives in `~/job-autoapply/` (create if missing). Use `scripts/store.py` for all reads/writes so the format stays consistent.
+## Local data (`~/job-autoapply/`, via `scripts/store.py` only)
 
 ```
-~/job-autoapply/
-  profile.json        # candidate profile + preferences + caps (schema: assets/profile.template.json)
-  answers.json        # bank of screening question → answer, grown over time
-  applied.jsonl       # one line per application attempt (dedup + history)
-  pending_questions.json  # questions you couldn't answer, for the user to fill
-  resumes/            # resume file(s) the user provided
+profile.json           candidate facts, prefs, exclusions, per-platform automation settings
+answers.json           screening-question answer bank (grows every run)
+applied.jsonl          every attempt: applied / skipped / skipped_question / failed / external
+pending_questions.json questions you couldn't answer truthfully
+targets.json           company career boards to watch [{ats, slug, company}]
+jobs.jsonl             latest discovered jobs (normalized), overwritten each run
+shortlist.json         prefiltered + scored jobs for this run
+recipes.md             learned site quirks (selectors, flow changes) — read before each platform
+resumes/               resume files
 ```
 
-If there's no filesystem (e.g. running only in the Chrome side panel), tell the user the profile can't persist there and suggest running from Claude Cowork or Claude Code with Claude in Chrome connected.
+No filesystem (Chrome side panel only)? Say the profile can't persist there; recommend Claude Cowork or Claude Code with Claude in Chrome connected.
+
+## Token and accuracy rules
+
+Follow these on every run; they are the difference between a 20K-token run and a 300K-token one.
+
+- **Discover off-browser first.** ATS feeds (`scripts/ats_fetch.py`) and the Indeed connector (if available) return structured jobs with zero page reads.
+- **Filter in code, not in context.** Run `scripts/prefilter.py`; only the shortlist reaches you. Never paste whole job lists into the conversation.
+- **Read pages as text/structure, never screenshot by default.** Use page-text / accessibility-tree / find-element tools. Screenshot only when an element can't be found structurally, and say why.
+- **One JD read per job.** Read once, decide, keep a one-line summary; don't re-read.
+- **Answer bank first.** Resolve each screening question with `store.py match --q "..."` before reasoning about it.
+- **Verify, don't assume.** After every click that changes state: re-read the page and confirm the expected result (next step, "Applied", "Application sent"). Element refs go stale after navigation; re-find them.
+- **Learn once.** When a flow differs from the reference file, append the fix to `recipes.md` (`store.py recipe --platform p --note "..."`).
+- **Delegate repetition.** In Claude Code with subagents, hand per-job scoring and form-filling to a smaller/faster model with only the job, profile and answer bank in context; keep orchestration in the main agent.
 
 ## Workflow
 
-### Step 1 — Load or build the profile
+### 1. Profile
+`python3 scripts/store.py status`. If no valid profile → setup: get the resume, extract facts, ask the questions in `references/setup-questions.md` (small groups, skip what the resume answers, confirm inferences), show the draft, save with `store.py init --from draft.json`, seed `answers.json`. If valid → two-line summary + "anything changed?".
 
-Run `python3 scripts/store.py status`. If a valid profile exists, summarize it in two lines and ask if anything changed (new CTC, notice period, location). Then go to Step 2.
+### 2. Plan the run
+Platforms = user's request, or `automation.platforms` from profile on autopilot. For each: `store.py today --platform p` → remaining budget. Read `recipes.md` once.
 
-If not, run setup:
+### 3. Discover
+| Source | How | Reference |
+|---|---|---|
+| Company career boards | `python3 scripts/ats_fetch.py` (uses targets.json) | `references/ats.md` |
+| Indeed | Indeed connector search tools if present; else browser | `references/indeed.md` |
+| Naukri | recommended tabs / search in Chrome | `references/naukri.md` |
+| LinkedIn | Easy Apply search in Chrome | `references/linkedin.md` |
+| Instahyre | Opportunities tab in Chrome | `references/instahyre.md` |
+| Wellfound, Cutshort | search in Chrome | `references/startups.md` |
+| Hirist | search in Chrome | `references/hirist.md` |
 
-1. **Ask for the resume** (PDF/DOCX upload or path). Copy it into `resumes/`. Extract: name, email, phone, current title/company, total experience, per-skill experience (estimate per skill only from dated roles that mention it; mark estimates as such), education, past companies, key projects.
-2. **Ask the clarification questions** in `references/setup-questions.md`. Ask in small groups (3–4 at a time, using tappable options where the tool exists), skip anything the resume already answers, and confirm what you inferred instead of re-asking.
-3. **Show the draft profile** in plain language and get a yes before saving. Pay special attention to per-skill years — have the user confirm or correct each.
-4. Save with `python3 scripts/store.py init --from <draft.json>`, which validates against the template.
-5. Seed `answers.json` with the common screening answers from setup (notice period, CTC, relocation, years in top skills, work authorization).
+For browser sources, extract only the card fields (id, title, company, location, experience, url, posted) and append them to `jobs.jsonl` with `store.py addjobs --file cards.json` (JSON list). Read the platform reference only when that platform is in the run.
 
-### Step 2 — Pick the platform and plan the run
+### 4. Prefilter and score
+`python3 scripts/prefilter.py --top 40` → writes `shortlist.json` (deduped against applied.jsonl, exclusions removed, heuristic score 0–100). Then for each shortlisted job, up to the platform's remaining budget: read the JD once and make the final call (must-have skills present, experience fits, no exclusion hit, ≥ `min_match_score`). In `approve_batch`, show the final list (title · company · score · one-line reason) and wait for OK.
 
-Ask which platform(s) for this run if not stated. Check today's count with `python3 scripts/store.py today --platform naukri|linkedin`. Remaining budget = cap − today's count. If zero, say so and stop.
+### 5. Apply
+Per the platform reference. For each question: `store.py match` → profile facts → else skip + `store.py pending --add`. Free-text "why you"/notes: write 3–5 sentences tailored to this JD using only resume facts; in `approve_each`/`approve_batch` show it first. Submit per mode, verify confirmation, then `store.py log ...`. Read the next JD before the next submit (natural pacing; never rapid-fire).
 
-Then read the platform reference:
-- Naukri → `references/naukri.md`
-- LinkedIn → `references/linkedin.md`
+### 6. Report
+Applied / skipped (grouped reasons) / external links for manual apply / platform warnings / pending questions. Save answers the user gives with `store.py answer`. Increment `supervised_runs.<platform>` with `store.py set` after each supervised run the user watched.
 
-### Step 3 — Find and score jobs
+## Autopilot and scheduling
 
-Collect candidate jobs per the platform reference. For each, before opening the apply flow:
+"Run my job hunt" = steps 1–6 over all configured platforms, cheapest first: ATS → Indeed → Naukri → Instahyre → Hirist → Cutshort → Wellfound → LinkedIn.
 
-- `python3 scripts/store.py seen --platform <p> --job-id <id>` → skip if already applied/skipped.
-- Score 0–100 against the profile: role title fit (30), must-have skill overlap (40), experience range fit (15), location/remote fit (10), exclusions clear (5). Hard-skip anything matching `exclusions` (companies, role keywords) or below `min_match_score`.
-- Rank, take the top N where N = remaining budget.
+Schedule via Cowork or Claude in Chrome scheduled tasks (weekdays), only after the supervised threshold. The computer must be awake with Chrome open; a login or OTP wall ends that platform's run, which is the intended behavior. End every scheduled run with the report so the user sees what happened.
 
-In `approve_batch` mode, show the shortlist (title, company, location, score, one-line reason) and wait for the OK.
+## Updating
 
-### Step 4 — Apply
-
-Follow the platform reference for the form flow. For each screening question:
-
-1. Look it up in `answers.json` (match by meaning, not exact text — "notice period in days" and "How soon can you join?" are the same question).
-2. Else derive it from `profile.json` if the answer is directly there.
-3. Else: don't guess. Close the form without submitting, log the job as `skipped_question`, and add the question to `pending_questions.json`.
-
-Before Submit in `approve_each`, show: job, company, every question with the answer you entered. After submit, verify the confirmation on screen (don't assume success), then log:
-
-`python3 scripts/store.py log --platform <p> --job-id <id> --title "..." --company "..." --url "..." --score 82 --status applied|skipped|skipped_question|failed|external --note "..."`
-
-Leave a natural gap between applications (read the next job description properly before applying — that alone paces things). Never rapid-fire.
-
-### Step 5 — Wrap up
-
-Report: applied count, skipped (with reasons grouped), any platform warnings, and the pending questions. Ask the user to answer pending questions; save answers with `python3 scripts/store.py answer --q "..." --a "..."` so next run handles them.
-
-## Scheduling
-
-If the user wants recurring runs: suggest weekday scheduling via Cowork scheduled tasks / Claude in Chrome scheduled tasks, after at least two supervised runs. Warn that scheduled tasks need the computer awake and Chrome open, and that a login/OTP wall will stop an unattended run (which is the correct behavior — it should log and notify, not push through). Scheduled runs should use `approve_batch` or `auto` on Naukri only; keep LinkedIn supervised.
-
-## Updating the profile
-
-When the user says something changed ("my notice is now 30 days", "add Go"), update via `python3 scripts/store.py set --key <dotted.key> --value <json>` and also fix any affected entries in `answers.json`.
+Profile change → `store.py set --key k --value v` and fix affected `answers.json` entries. New target company → find its board URL (boards.greenhouse.io/<slug>, jobs.lever.co/<slug>, jobs.ashbyhq.com/<slug>) and `store.py target --ats a --slug s --company "Name"`.

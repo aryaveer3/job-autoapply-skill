@@ -7,3 +7,7 @@ answers.json
 applied.jsonl
 pending_questions.json
 resumes/
+targets.json
+jobs.jsonl
+shortlist.json
+recipes.md
